@@ -2,7 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.functional import binary_cross_entropy as bce
-from torch.autograd import Variable
 from torch.nn.utils import clip_grad_norm
 
 from torchvision.utils import make_grid, save_image
@@ -107,7 +106,7 @@ class DAE(nn.Module):
 		return x
 
 	def corrupt(self, x):
-		noise = self.sigma * Variable(torch.randn(x.size())).type_as(x)
+		noise = self.sigma * torch.randn(x.size()).type_as(x)
 		return x + noise
 
 	def sample_z(self, noSamples=25, mode=None):
@@ -116,9 +115,9 @@ class DAE(nn.Module):
 		else:
 			z = self.multi_prior(noSamples=noSamples, mode=mode)
 		if self.useCUDA:
-			return Variable(z.cuda())
+			return z.cuda()
 		else:
-			return Variable(z)
+			return z
 
 	def decode(self, z):
 		#define the decoder here
@@ -143,14 +142,14 @@ class DAE(nn.Module):
 		elif loss == 'MSE':
 			return torch.mean(F.mse_loss(rec_x, x, size_average=True))
 		else:
-			print 'unknown loss:'+loss
+			print ('unknown loss:'+loss)
 
 	def save_params(self, exDir):
-		print 'saving params...'
+		print ('saving params...')
 		torch.save(self.state_dict(), join(exDir, 'dae_params'))
 
 	def load_params(self, exDir):
-		print 'loading params...'
+		print ('loading params...')
 		self.load_state_dict(torch.load(join(exDir, 'dae_params')))
 
 	def sample_x(self, M, exDir, z=None):
@@ -219,15 +218,15 @@ class IDAE(nn.Module):
 		return x
 
 	def corrupt(self, x):
-		noise = self.sigma * Variable(torch.randn(x.size())).type_as(x)
+		noise = self.sigma * torch.randn(x.size()).type_as(x)
 		return x + noise
 
 	def sample_z(self, noSamples=25):
 		z = self.norm_prior(noSamples=noSamples)
 		if self.useCUDA:
-			return Variable(z.cuda())
+			return z.cuda()
 		else:
-			return Variable(z)
+			return z
 
 	def decode(self, z):
 		#define the decoder here
@@ -242,7 +241,7 @@ class IDAE(nn.Module):
 
 	def forward(self, x): #intergration occurs here
 		# the outputs needed for training
-		x_corr = Variable(torch.Tensor(x.size()).fill_(0)).type_as(x)
+		x_corr = torch.Tensor(x.size().fill_(0)).type_as(x)
 		for m in range(self.M):
 			x_corr += self.corrupt(x)
 		x_corr /= self.M
@@ -255,14 +254,14 @@ class IDAE(nn.Module):
 		elif loss == 'MSE':
 			return torch.mean(F.mse_loss(rec_x, x, size_average=True))
 		else:
-			print 'unknown loss:'+loss
+			print ('unknown loss:'+loss)
 
 	def save_params(self, exDir):
-		print 'saving params...'
+		print ('saving params...')
 		torch.save(self.state_dict(), join(exDir, 'dae_params'))
 
 	def load_params(self, exDir):
-		print 'loading params...'
+		print ('loading params...')
 		self.load_state_dict(torch.load(join(exDir, 'dae_params')))
 
 	def sample_x(self, M, exDir, z=None):
@@ -300,36 +299,36 @@ class DIS_Z(nn.Module):
 		return self.discriminate(z)
 
 	def dis_loss(self, z):
-		zReal = Variable(self.prior(z.size(0))).type_as(z)
+		zReal = self.prior(z.size(0)).type_as(z)
 		pReal = self.discriminate(zReal)
 
 		zFake = z.detach()  #detach so grad only goes thru dis
 		pFake = self.discriminate(zFake)
 
-		ones = Variable(torch.Tensor(pReal.size()).fill_(1)).type_as(pReal)
-		zeros = Variable(torch.Tensor(pFake.size()).fill_(0)).type_as(pFake)
+		ones = torch.Tensor(pReal.size()).fill_(1).type_as(pReal)
+		zeros = torch.Tensor(pFake.size()).fill_(0).type_as(pFake)
 
 		return 0.5 * torch.mean(bce(pReal, ones) + bce(pFake, zeros))
 
 	def gen_loss(self, z):
 		# n.b. z is not detached so it will update the models it has passed thru
 		pFake = self.discriminate(z)
-		ones = Variable(torch.Tensor(pFake.size()).fill_(1)).type_as(pFake)
+		ones = torch.Tensor(pFake.size()).fill_(1).type_as(pFake)
 		return torch.mean(bce(pFake, ones))
 
 	def save_params(self, exDir):
-		print 'saving params...'
+		print ('saving params...')
 		torch.save(self.state_dict(), join(exDir, 'dis_z_params'))
 
 	def load_params(self, exDir):
-		print 'loading params...'
+		print ('loading params...')
 		self.load_state_dict(torch.load(join(exDir, 'dis_z_params')))
 
 	def plot_encz(self, exDir):  #TODO
 		'''
 		plot the encoded z samples
 		'''
-		print 'TO DO'
+		print ('TO DO')
 
 
 class LINEAR_SVM(nn.Module): 
@@ -359,9 +358,9 @@ class LINEAR_SVM(nn.Module):
 		return  classScoreTest.float().sum()/target.size(0)
 
 	def save_params(self, exDir):
-		print 'saving params...'
+		print ('saving params...')
 		torch.save(self.state_dict(), join(exDir, 'linearSVM_params'))
 
 	def load_params(self, exDir):
-		print 'loading params...'
+		print ('loading params...')
 		self.load_state_dict(torch.load(join(exDir, 'linearSVM_params')))

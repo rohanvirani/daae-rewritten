@@ -13,11 +13,11 @@ import numpy as np
 def prep_data(data, useCUDA):
 	x, y = data
 	if useCUDA:
-		x = Variable(x.cuda())
-		y = Variable(y.cuda()).view(y.size(0),1).type_as(x)
+		x = x.cuda()
+		y = y.cuda().view(y.size(0),1).type_as(x)
 	else:
-		x = Variable(x)
-		y = Variable(y).view(y.size(0),1).type_as(x)
+		x = x
+		y = y.view(y.size(0),1).type_as(x)
 	return x,y
 
 def make_new_folder(exDir):
