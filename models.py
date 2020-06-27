@@ -126,7 +126,7 @@ class DAE(nn.Module):
 		z = F.relu(self.dec2(z))
 		z = F.relu(self.dec3(z))
 		z = F.relu(self.dec4(z))
-		z = F.sigmoid(self.dec5(z))
+		z = torch.sigmoid(self.dec5(z))
 
 		return z
 
